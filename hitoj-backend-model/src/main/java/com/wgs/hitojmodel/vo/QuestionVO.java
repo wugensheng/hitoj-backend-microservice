@@ -102,7 +102,6 @@ public class QuestionVO implements Serializable {
         if (judgeConfig != null) {
             question.setJudgeConfig(JSONUtil.toJsonStr(judgeConfig));
         }
-
         return question;
     }
 

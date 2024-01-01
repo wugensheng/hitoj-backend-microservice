@@ -16,6 +16,7 @@ import com.wgs.hitojmodel.enums.QuestionSubmitLanguageEnum;
 import com.wgs.hitojmodel.enums.QuestionSubmitStatusEnum;
 import com.wgs.hitojmodel.vo.QuestionSubmitVO;
 import com.wgs.hitojquestionservice.mapper.QuestionSubmitMapper;
+import com.wgs.hitojquestionservice.rabbitmq.MyMessageProducer;
 import com.wgs.hitojquestionservice.service.QuestionService;
 import com.wgs.hitojquestionservice.service.QuestionSubmitService;
 import com.wgs.serviceclientservice.service.JudgeFeignClient;
@@ -51,6 +52,9 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
     @Resource
     @Lazy
     private JudgeFeignClient judgeService;
+
+    @Resource
+    private MyMessageProducer myMessageProducer;
 
     /**
      * 提交题目代码
@@ -92,10 +96,12 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         }
 
         Long questionSubmitId = questionSubmit.getId();
+
+        myMessageProducer.sendMessage("code_exchange", "my_routingKey", questionSubmitId.toString());
         // 执行判题服务 异步操作
-        CompletableFuture.runAsync(() -> {
-            judgeService.doJudge(questionSubmitId);
-        });
+//        CompletableFuture.runAsync(() -> {
+//            judgeService.doJudge(questionSubmitId);
+//        });
 
         return questionSubmitId;
     }
