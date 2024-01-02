@@ -10,6 +10,8 @@ import com.wgs.hitojmodel.entity.QuestionSubmit;
 import com.wgs.hitojmodel.entity.User;
 import com.wgs.hitojmodel.vo.QuestionSubmitVO;
 
+import java.util.List;
+
 /**
 * @author wugensheng
 * @description 针对表【question_submit(题目提交表)】的数据库操作Service

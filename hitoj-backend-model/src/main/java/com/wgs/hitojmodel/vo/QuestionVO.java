@@ -42,6 +42,16 @@ public class QuestionVO implements Serializable {
     private List<String> tags;
 
     /**
+     * 难度(简单，中等，困难)
+     */
+    private String level;
+
+    /**
+     * 是否完成
+     */
+    private Integer status;
+
+    /**
      * 提交数
      */
     private Integer submitNum;

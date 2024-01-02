@@ -1,6 +1,8 @@
 package com.wgs.hitojquestionservice.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
@@ -9,17 +11,26 @@ import com.wgs.hitojcommon.constant.CommonConstant;
 import com.wgs.hitojcommon.exception.BusinessException;
 import com.wgs.hitojcommon.exception.ThrowUtils;
 import com.wgs.hitojcommon.utils.SqlUtils;
+import com.wgs.hitojmodel.codeSandbox.JudgeInfo;
 import com.wgs.hitojmodel.dto.question.QuestionQueryRequest;
+import com.wgs.hitojmodel.dto.questionsubmit.QuestionSubmitQueryRequest;
 import com.wgs.hitojmodel.entity.Question;
+import com.wgs.hitojmodel.entity.QuestionSubmit;
 import com.wgs.hitojmodel.entity.User;
+import com.wgs.hitojmodel.enums.JudgeInfoMessageEnum;
+import com.wgs.hitojmodel.vo.QuestionSubmitVO;
 import com.wgs.hitojmodel.vo.QuestionVO;
 import com.wgs.hitojmodel.vo.UserVO;
 import com.wgs.hitojquestionservice.service.QuestionService;
 import com.wgs.hitojquestionservice.mapper.QuestionMapper;
+import com.wgs.hitojquestionservice.service.QuestionSubmitService;
+import com.wgs.hitojquestionservice.service.StaticService;
+import com.wgs.serviceclientservice.service.QuestionFeignClient;
 import com.wgs.serviceclientservice.service.UserFeignClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -43,6 +54,12 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question>
     @Resource
     private UserFeignClient userService;
 
+    @Resource
+    private QuestionMapper questionMapper;
+
+    @Resource
+    @Lazy
+    private StaticService staticService;
 //    @Resource
 //    private QuestionThumbMapper questionThumbMapper;
 //
@@ -151,26 +168,33 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question>
         if (CollectionUtils.isEmpty(questionList)) {
             return questionVOPage;
         }
-        // 1. 关联查询用户信息
-        Set<Long> userIdSet = questionList.stream().map(Question::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
-                .collect(Collectors.groupingBy(User::getId));
-        // 2. 已登录，获取用户点赞、收藏状态
-        Map<Long, Boolean> questionIdHasThumbMap = new HashMap<>();
-        Map<Long, Boolean> questionIdHasFavourMap = new HashMap<>();
+        // 获取当前用户的所有提交结果
         User loginUser = userService.getLoginUser(request);
+        List<QuestionSubmit> questionSubmitList = staticService.getQuestionSubmitListByUser(loginUser);
+        Set<Long> acceptedQuestionIdSet = staticService.getAcceptedQuestionIdSet(questionSubmitList);
+
         // 填充信息
         List<QuestionVO> questionVOList = questionList.stream().map(question -> {
             QuestionVO questionVO = QuestionVO.objToVo(question);
-            Long userId = question.getUserId();
-            User user = null;
-            if (userIdUserListMap.containsKey(userId)) {
-                user = userIdUserListMap.get(userId).get(0);
+            if (acceptedQuestionIdSet.contains(questionVO.getId())) {
+                questionVO.setStatus(1);
+            } else {
+                questionVO.setStatus(0);
             }
             return questionVO;
         }).collect(Collectors.toList());
         questionVOPage.setRecords(questionVOList);
         return questionVOPage;
+    }
+
+    @Override
+    public Integer updateSubmitNumById(long questionId) {
+        return questionMapper.update(null, new UpdateWrapper<Question>().setSql("submitNum = submitNum + 1").eq("id", questionId));
+    }
+
+    @Override
+    public Integer updateAcceptedNumById(long questionId) {
+        return questionMapper.update(null, new UpdateWrapper<Question>().setSql("acceptedNum = acceptedNum + 1").eq("id", questionId));
     }
 }
 

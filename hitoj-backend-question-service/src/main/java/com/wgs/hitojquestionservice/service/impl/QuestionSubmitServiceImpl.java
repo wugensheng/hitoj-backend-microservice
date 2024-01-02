@@ -1,5 +1,6 @@
 package com.wgs.hitojquestionservice.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -55,6 +56,9 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 
     @Resource
     private MyMessageProducer myMessageProducer;
+
+    @Resource
+    private QuestionSubmitMapper questionSubmitMapper;
 
     /**
      * 提交题目代码

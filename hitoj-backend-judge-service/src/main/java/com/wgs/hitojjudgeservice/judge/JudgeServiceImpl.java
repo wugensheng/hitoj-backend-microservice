@@ -14,6 +14,7 @@ import com.wgs.hitojmodel.dto.question.JudgeCase;
 import com.wgs.hitojmodel.dto.question.JudgeConfig;
 import com.wgs.hitojmodel.entity.Question;
 import com.wgs.hitojmodel.entity.QuestionSubmit;
+import com.wgs.hitojmodel.enums.JudgeInfoMessageEnum;
 import com.wgs.hitojmodel.enums.QuestionSubmitStatusEnum;
 import com.wgs.serviceclientservice.service.QuestionFeignClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,6 +101,11 @@ public class JudgeServiceImpl implements JudgeService {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "提交题目判题信息更新失败");
         }
         QuestionSubmit questionSubmitResult = questionService.getQuestionSubmitById(questionSubmitId);
+        // todo 处理并发事务（乐观锁+重试机制）
+        questionService.updateSubmitNumById(question.getId());
+        if (judgeInfo.getMessage().equals(JudgeInfoMessageEnum.ACCEPTED.getValue())) {
+            questionService.updateAcceptedNumById(question.getId());
+        }
         return questionSubmitResult;
     }
 }
